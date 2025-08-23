@@ -12,15 +12,38 @@ Download and install MSYS2 from the official website: [msys2.org](https://www.ms
 ### 2. Install Required Packages
 After installing MSYS2, open the **MSYS2 MINGW64** shell and run the following command to install the C++ compiler, `make`, `git`, and the SDL3 library:
 
+Upgrade the packages
+
 ```bash
-pacman -S --needed base-devel mingw-w64-x86_64-toolchain git mingw-w64-x86_64-SDL3
+pacman -Syu # After this the MSYS2 shell might close so open it again and run the next command
+pacman -Su
 ```
+
+Download the `g++` compiler
+
+```bash
+pacman -S --needed base-devel mingw-w64-x86_64-toolchain
+```
+
+Then open the MINGW64 Shell and run this command to install sdl3
+
+```bash
+pacman -S mingw-w64-x86_64-sdl3 mingw-w64-x86_64-sdl3-image mingw-w64-x86_64-sdl3-ttf mingw-w64-x86_64-make
+```
+
+You will have to compile using MINGW64 Shell, so you might need to set up that as well
 
 ## Building the Code ⚙️
 
 Each example is in its own folder. Navigate into a project folder and use one of the following methods to compile the code.
 
-### Method 1: Direct Compilation
+### Clone The repository
+
+```bash
+git clone https://github.com/KavyaJP/SDL3.git
+```
+
+### Build Method 1: Direct Compilation
 
 Compile the C++ source file using `g++` and `pkg-config`. This command automatically finds the correct compiler and linker flags for SDL3.
 
@@ -28,7 +51,7 @@ Compile the C++ source file using `g++` and `pkg-config`. This command automatic
 g++ main.cpp -o main.exe $(pkg-config --cflags --libs sdl3)
 ```
 
-### Method 2: Using a Makefile
+### Build Method 2: Using a Makefile
 
 If a `Makefile` is present in the directory, you can simply run the `make` command to build the project.
 
