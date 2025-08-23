@@ -31,17 +31,27 @@ Then open the MINGW64 Shell and run this command to install sdl3
 pacman -S mingw-w64-x86_64-sdl3 mingw-w64-x86_64-sdl3-image mingw-w64-x86_64-sdl3-ttf mingw-w64-x86_64-make
 ```
 
-You will have to compile using MINGW64 Shell, so you might need to set up that as well
+And now to verify the installation of all these libraries, use this command in the root directory of this repository after cloning it
+
+### 3. Clone The repository
+
+```bash
+git clone https://github.com/KavyaJP/SDL3.git
+cd SDL3
+```
+
+### 4. Verify Installation
+
+```bash
+make
+```
+
+this should create a VerifyInstallation.exe and after running the exe, you should see a black screen window popup for 3 seconds
 
 ## Building the Code ⚙️
 
 Each example is in its own folder. Navigate into a project folder and use one of the following methods to compile the code.
 
-### Clone The repository
-
-```bash
-git clone https://github.com/KavyaJP/SDL3.git
-```
 
 ### Build Method 1: Direct Compilation
 
