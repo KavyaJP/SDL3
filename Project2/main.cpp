@@ -6,17 +6,34 @@
 #include <SDL3/SDL_main.h>
 #include <iostream>
 
-void cleanup(SDL_Window *win)
+// We will make a struct named SDLState so whenever we want to use an SDL Component,
+// we can just pass this state object around.
+struct SDLState
+{
+    SDL_Window *window;
+    SDL_Event event;
+    SDL_Renderer *renderer;
+}; // Added a semicolon here, which is required after a struct definition.
+
+// The cleanup function now takes the whole SDLState struct.
+void cleanup(SDLState &state)
 {
     std::cout << "Closing the window" << std::endl;
-    SDL_DestroyWindow(win);
+    // Check if the window exists before trying to destroy it.
+    if (state.window)
+    {
+        SDL_DestroyWindow(state.window);
+    }
     SDL_Quit();
 }
 
 int main(int argc, char *argv[])
 {
+    SDLState state = {nullptr}; // Initialize the window pointer to null
 
-    if (!SDL_Init(SDL_INIT_VIDEO))
+    // SDL_Init returns 0 on success and a negative number on failure.
+    // The check has been corrected to look for a negative return value.
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error Initializing SDL3", nullptr);
         return 1;
@@ -25,12 +42,12 @@ int main(int argc, char *argv[])
     int height = 480;
     int width = 640;
 
-    SDL_Window *win = SDL_CreateWindow("Hello Window", width, height, 0);
+    state.window = SDL_CreateWindow("Hello Window", width, height, 0);
 
-    if (!win)
+    if (!state.window)
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing the window", nullptr);
-        cleanup(win);
+        SDL_Quit(); // Just quit SDL if the window fails to create.
         return 1;
     }
 
@@ -38,20 +55,22 @@ int main(int argc, char *argv[])
     bool running = true;
     while (running)
     {
-        SDL_Event event{0}; // This will run in every iteration, and will tell us about which events happened
-        // now we will pass the event structure in a while loop
-        while (SDL_PollEvent(&event)) // We only pass a pointer so it takes less space in memory
+        // We pass the address of our event object to SDL_PollEvent.
+        // SDL will fill this object with event information.
+        while (SDL_PollEvent(&state.event))
         {
-            switch (event.type) // To check which event is happening
+            // We check the 'type' of the event that occurred.
+            switch (state.event.type)
             {
-            case SDL_EVENT_QUIT: // if the user clicks on the close button of the window
+            case SDL_EVENT_QUIT: // If the user clicks on the close button of the window
                 std::cout << "User clicked on the close window button" << std::endl;
-                running = false; // This will break us out of the main game loop, after which the cleanup function will be called
+                running = false; // This will break us out of the main game loop.
                 break;
             }
         }
     }
 
-    cleanup(win);
+    // The cleanup function is called after the game loop finishes.
+    cleanup(state);
     return 0;
 }
