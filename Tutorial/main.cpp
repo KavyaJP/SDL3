@@ -34,6 +34,12 @@ int main(int argc, char *argv[])
     SDL_Texture *idle_texture = IMG_LoadTexture(state.renderer, "../data/idle.png");
     SDL_SetTextureScaleMode(idle_texture, SDL_SCALEMODE_NEAREST);
 
+    // Game data: input
+    const bool *keys = SDL_GetKeyboardState(nullptr); // We only need to call this once at the begining of the program
+
+    float playerX = 0;
+    float floor = state.logical_height;
+
     // Start the game loop
     bool running = true;
     while (running)
@@ -53,24 +59,33 @@ int main(int argc, char *argv[])
             }
         }
 
-        // Draw on the window
+        // Handle player input
+        float moveAmount = 0;
+        if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT]) // left
+            moveAmount += -0.1;
+        if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT]) // right
+            moveAmount += 0.1;
+
+        playerX += moveAmount;
 
         // RGBA, this is used to set a color for renderer
         SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
         // This is the line that will actually make the renderer white
         SDL_RenderClear(state.renderer);
 
+        const float spriteSize = 32;
+
         SDL_FRect src{
             .x = 0,
             .y = 0,
-            .w = 32,
-            .h = 32}; // How many pixels do we want to draw on the window
+            .w = spriteSize,
+            .h = spriteSize}; // How many pixels do we want to draw on the window
 
         SDL_FRect dst{
-            .x = 0,
-            .y = 0,
-            .w = 32,
-            .h = 32}; // at which source do we want to load the texture at
+            .x = playerX,
+            .y = floor - spriteSize,
+            .w = spriteSize,
+            .h = spriteSize}; // at which source do we want to load the texture at
 
         // Render Assets
         SDL_RenderTexture(state.renderer, idle_texture, &src, &dst);
