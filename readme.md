@@ -73,16 +73,6 @@ make
 make clean
 ```
 
-## Learning Projects
-
-This is a list of the projects and concepts I am exploring.
-
-* **01_hello_window**: Setting up a basic window and an application loop.
-* **02_event_handling**: Managing user input, such as closing the window and keyboard presses.
-* **03_drawing_shapes**: Using the SDL renderer to draw basic geometric shapes like rectangles and lines.
-* **04_loading_images**: Loading and displaying image files (e.g., `.bmp`, `.png`).
-* *(...more to come as I learn!)*
-
 ## Useful Resources
 
 * **SDL Wiki:** The official documentation and API reference. [wiki.libsdl.org](https://wiki.libsdl.org/)
