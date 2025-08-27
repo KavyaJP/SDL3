@@ -3,6 +3,7 @@
 #include <SDL3_image/SDL_image.h>
 #include <iostream>
 
+// Represents the core components of the SDL application state.
 struct SDLState
 {
     SDL_Window *window;
@@ -11,39 +12,59 @@ struct SDLState
     int width, height, logical_width, logical_height;
 };
 
+// Function prototypes
 void cleanup(SDLState &state);
 bool initialise(SDLState &state);
 
 int main(int argc, char *argv[])
 {
+    // Initialize the SDL state structure.
+    SDLState state = {nullptr};
 
-    SDLState state = {nullptr}; // Initialize the window pointer to null
-
-    // This will be te height and width of the actual window Created as well as the logical height and width
+    // Set the desired dimensions for the window and the logical rendering area.
     state.height = 720;
     state.width = 1280;
     state.logical_width = 640;
     state.logical_height = 480;
 
-    if (!initialise(state)) // If there is any problem in initialisation we exit the program
+    // Initialise SDL, the window, and the renderer.
+    if (!initialise(state))
     {
         return 1;
     }
 
     // Load game asset
     SDL_Texture *idle_texture = IMG_LoadTexture(state.renderer, "../data/idle.png");
+    if (!idle_texture)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to load texture: ../data/idle.png", state.window);
+        cleanup(state);
+        return 1;
+    }
     SDL_SetTextureScaleMode(idle_texture, SDL_SCALEMODE_NEAREST);
 
-    // Game data: input
-    const bool *keys = SDL_GetKeyboardState(nullptr); // We only need to call this once at the begining of the program
-
+    // --- GAME DATA & INPUT SETUP ---
+    // Get a pointer to the keyboard state array. This is a snapshot of the keyboard.
+    const bool *keys = SDL_GetKeyboardState(nullptr);
     float playerX = 0;
     float floor = state.logical_height;
 
-    // Start the game loop
+    // --- DELTA TIME SETUP ---
+    // Get the time at the start of the game.
+    uint64_t prevTime = SDL_GetTicks();
+
+    // Start the main game loop.
     bool running = true;
     while (running)
     {
+        // --- DELTA TIME CALCULATION ---
+        // Get the current time at the beginning of the frame.
+        uint64_t nowTime = SDL_GetTicks();
+        // Calculate the time elapsed since the last frame, in seconds.
+        // We use 1000.0f to force a floating-point division.
+        float deltaTime = (nowTime - prevTime) / 1000.0f;
+
+        // Process all pending events in the queue.
         while (SDL_PollEvent(&state.event))
         {
             switch (state.event.type)
@@ -59,99 +80,106 @@ int main(int argc, char *argv[])
             }
         }
 
-        // Handle player input
-        float moveAmount = 0;
+        // --- HANDLE PLAYER INPUT ---
+        // Define player speed in pixels per second.
+        float moveAmountX = 0;
         if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT]) // left
-            moveAmount += -0.1;
+            moveAmountX += -75;
         if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT]) // right
-            moveAmount += 0.1;
+            moveAmountX += 75;
 
-        playerX += moveAmount;
+        // Update player position based on speed and delta time.
+        playerX += moveAmountX * deltaTime;
 
-        // RGBA, this is used to set a color for renderer
+        // --- RENDERING LOGIC ---
+        // Set the draw color and clear the screen.
         SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
-        // This is the line that will actually make the renderer white
         SDL_RenderClear(state.renderer);
 
+        // Define the source and destination rectangles for rendering.
         const float spriteSize = 32;
-
         SDL_FRect src{
             .x = 0,
             .y = 0,
             .w = spriteSize,
-            .h = spriteSize}; // How many pixels do we want to draw on the window
+            .h = spriteSize};
 
         SDL_FRect dst{
             .x = playerX,
             .y = floor - spriteSize,
             .w = spriteSize,
-            .h = spriteSize}; // at which source do we want to load the texture at
+            .h = spriteSize};
 
-        // Render Assets
+        // Render the texture to the screen.
         SDL_RenderTexture(state.renderer, idle_texture, &src, &dst);
 
-        // Now we will swap buffers to present it on window
+        // Swap the buffers to display the new frame.
         SDL_RenderPresent(state.renderer);
+
+        // --- END OF FRAME ---
+        // Set the previous time to the current time for the next frame's calculation.
+        prevTime = nowTime;
     }
 
+    // --- CLEANUP AFTER LOOP ---
     SDL_DestroyTexture(idle_texture);
-    // The cleanup function is called after the game loop finishes.
     cleanup(state);
     return 0;
 }
 
+/**
+ * @brief Releases all SDL resources in the reverse order of creation.
+ * @param state The current SDL application state.
+ */
 void cleanup(SDLState &state)
 {
+    std::cout << "Destroying the renderer" << std::endl;
+    if (state.renderer)
+        SDL_DestroyRenderer(state.renderer);
+
     std::cout << "Closing the window" << std::endl;
     if (state.window)
         SDL_DestroyWindow(state.window);
 
-    std::cout << "Destroying the renderer" << std::endl;
-    if (state.renderer)
-        SDL_DestroyRenderer(state.renderer); // We will now also destroy the renderer on cleanup
-
-    std::cout << "Quitting" << std::endl;
+    // In the latest SDL3, SDL_Quit handles all subsystem cleanup.
+    std::cout << "Quitting SDL" << std::endl;
     SDL_Quit();
 }
 
+/**
+ * @brief Initializes SDL and its subsystems, creates a window and a renderer.
+ * @param state The SDL application state to initialize.
+ * @return True on success, false on failure.
+ */
 bool initialise(SDLState &state)
 {
-    bool initSuccess = true;
-    // This block will help us in detecting run time errors when initialising an SDL Object
+    // Initialize the SDL video subsystem.
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error Initializing SDL3", nullptr);
-        initSuccess = false;
+        return false;
     }
 
-    // Creating a Widnow, Title | width | Height | SDL Flag
+    // Create the main application window.
     state.window = SDL_CreateWindow("Hello Window", state.width, state.height, SDL_WINDOW_RESIZABLE);
-
-    // If any runtime error happened when initialsing a window
     if (!state.window)
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing the window", nullptr);
-        SDL_Quit();
-        initSuccess = false;
+        cleanup(state);
+        return false;
     }
 
-    /* Renderer help us render images and objects on the window
-     * nullptr makes it so that the object is rendered on the current device
-     * Later We will make it so that we can automatically choose the best device, or let user choose the device
-     */
-    // SDLWindow | name
+    // Create a renderer for the window.
     state.renderer = SDL_CreateRenderer(state.window, nullptr);
-
-    // If there was an error creating renderer
     if (!state.renderer)
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error Initializing renderer", nullptr);
         cleanup(state);
-        initSuccess = false;
+        return false;
     }
 
-    // Configure a logical resolution for game so SDL has to worry about the scaling and not us
-    SDL_SetRenderLogicalPresentation(state.renderer, state.logical_width, state.logical_height, SDL_LOGICAL_PRESENTATION_LETTERBOX); // Letterbox makes it so that the game retains the resolution i provided and fills the rest of the area with black color
+    // Configure a logical resolution for the game.
+    SDL_SetRenderLogicalPresentation(state.renderer, state.logical_width, state.logical_height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
-    return initSuccess;
+    return true;
 }
