@@ -3,6 +3,8 @@
 #include <SDL3_image/SDL_image.h>
 #include <iostream>
 
+#include "animation.h"
+
 // Represents the core components of the SDL application state.
 struct SDLState
 {
