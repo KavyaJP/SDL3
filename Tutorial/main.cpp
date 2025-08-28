@@ -53,6 +53,8 @@ int main(int argc, char *argv[])
     // Get the time at the start of the game.
     uint64_t prevTime = SDL_GetTicks();
 
+    bool flipHorizontal = false;
+
     // Start the main game loop.
     bool running = true;
     while (running)
@@ -84,9 +86,15 @@ int main(int argc, char *argv[])
         // Define player speed in pixels per second.
         float moveAmountX = 0;
         if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT]) // left
+        {
             moveAmountX += -75;
+            flipHorizontal = true;
+        }
         if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT]) // right
+        {
             moveAmountX += 75;
+            flipHorizontal = false;
+        }
 
         // Update player position based on speed and delta time.
         playerX += moveAmountX * deltaTime;
@@ -111,7 +119,8 @@ int main(int argc, char *argv[])
             .h = spriteSize};
 
         // Render the texture to the screen.
-        SDL_RenderTexture(state.renderer, idle_texture, &src, &dst);
+        SDL_RenderTextureRotated(state.renderer, idle_texture, &src, &dst, 0, nullptr,
+                                 (flipHorizontal) ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 
         // Swap the buffers to display the new frame.
         SDL_RenderPresent(state.renderer);
