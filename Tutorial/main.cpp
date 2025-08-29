@@ -2,6 +2,8 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3_image/SDL_image.h>
 #include <iostream>
+#include <vector>
+#include <string>
 
 #include "animation.h"
 
@@ -12,6 +14,40 @@ struct SDLState
     SDL_Event event;
     SDL_Renderer *renderer;
     int width, height, logical_width, logical_height;
+};
+
+struct Resources
+{
+    const int ANIM_PLAYER_IDLE = 0;
+    std::vector<Animation> playerAnims;
+
+    std::vector<SDL_Texture *> textures;
+    SDL_Texture *idle_texture;
+
+    SDL_Texture *load_texture(SDL_Renderer *renderer, const std::string &filepath)
+    {
+        // Load game asset
+        SDL_Texture *tex = IMG_LoadTexture(renderer, filepath.c_str());
+        SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
+        textures.push_back(tex);
+        return tex;
+    }
+
+    void load(SDLState &state)
+    {
+        playerAnims.resize(5);
+        playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);
+
+        idle_texture = load_texture(state.renderer, "../data/idle.png");
+    }
+
+    void unload()
+    {
+        for (SDL_Texture *tex : textures)
+        {
+            SDL_DestroyTexture(tex);
+        }
+    }
 };
 
 // Function prototypes
@@ -35,15 +71,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Load game asset
-    SDL_Texture *idle_texture = IMG_LoadTexture(state.renderer, "../data/idle.png");
-    if (!idle_texture)
-    {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Failed to load texture: ../data/idle.png", state.window);
-        cleanup(state);
-        return 1;
-    }
-    SDL_SetTextureScaleMode(idle_texture, SDL_SCALEMODE_NEAREST);
+    Resources res;
+    res.load(state);
 
     // --- GAME DATA & INPUT SETUP ---
     // Get a pointer to the keyboard state array. This is a snapshot of the keyboard.
@@ -121,7 +150,7 @@ int main(int argc, char *argv[])
             .h = spriteSize};
 
         // Render the texture to the screen.
-        SDL_RenderTextureRotated(state.renderer, idle_texture, &src, &dst, 0, nullptr,
+        SDL_RenderTextureRotated(state.renderer, res.idle_texture, &src, &dst, 0, nullptr,
                                  (flipHorizontal) ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 
         // Swap the buffers to display the new frame.
@@ -133,7 +162,7 @@ int main(int argc, char *argv[])
     }
 
     // --- CLEANUP AFTER LOOP ---
-    SDL_DestroyTexture(idle_texture);
+    res.unload();
     cleanup(state);
     return 0;
 }
