@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
     // Create our player
     GameObject player;
     player.type = ObjectType::player;
+    player.data.player = PlayerData();
     player.texture = res.idle_texture;
     player.animations = res.playerAnims;
     player.currentAnimation = res.ANIM_PLAYER_IDLE;
@@ -283,6 +284,22 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTi
         case PlayerState::idle:
             if (currentDirection)
                 obj.data.player.state = PlayerState::running;
+            else
+            {
+                // decelarate
+                if (obj.velocity.x)
+                {
+                    // if the velocity is positive i.e. in the right direction we use a negative factor and vice-versa
+                    const float factor = obj.velocity.x > 0 ? -1.5f : 1.5f;
+                    float amount = factor * obj.acceleration.x * deltaTime;
+
+                    // if velocity is already less than amount than further decelaration is not possible so we set it to 0
+                    if (std::abs(obj.velocity.x) < std::abs(amount))
+                        obj.velocity.x = 0;
+                    else
+                        obj.velocity.x += amount; // amount will be always inverse to velocity because of factor so we add it
+                }
+            }
             break;
         case PlayerState::running:
             if (!currentDirection)
@@ -298,7 +315,7 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTi
         // If the velocity is greater than max speed than reduce it to max speed
         // we use absolute value because velocity can be negative for currentDirection = -1
         if (std::abs(obj.velocity.x) > obj.maxSpeedX)
-            obj.velocity.x = obj.maxSpeedX;
+            obj.velocity.x = obj.maxSpeedX * currentDirection;
 
         // This is to get position
         obj.position += obj.velocity * deltaTime;
