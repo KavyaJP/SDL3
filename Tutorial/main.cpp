@@ -1,6 +1,8 @@
+#include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_image/SDL_image.h>
 #include <iostream>
+#include <vector>
 #include <string>
 #include <array>
 
@@ -134,6 +136,18 @@ int main(int argc, char *argv[])
             }
         }
 
+        // Update all objects
+        for (auto &layer : gs.layers)
+        {
+            for (GameObject &obj : layer)
+            {
+                if (obj.currentAnimation != -1)
+                {
+                    obj.animations[obj.currentAnimation].step(deltaTime);
+                }
+            }
+        }
+
         // --- RENDERING LOGIC ---
         // Set the draw color and clear the screen.
         SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
@@ -196,7 +210,7 @@ bool initialise(SDLState &state)
     }
 
     // Create the main application window.
-    state.window = SDL_CreateWindow("Hello Window", state.width, state.height, SDL_WINDOW_RESIZABLE);
+    state.window = SDL_CreateWindow("Tutorial Game", state.width, state.height, SDL_WINDOW_RESIZABLE);
     if (!state.window)
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing the window", nullptr);
@@ -223,15 +237,17 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
 {
     // Define the source and destination rectangles for rendering.
     const float spriteSize = 32;
+    float srcX = obj.currentAnimation != -1 ? obj.animations[obj.currentAnimation].currentFrame() * spriteSize : 0.0f;
+
     SDL_FRect src{
-        .x = 0,
+        .x = srcX,
         .y = 0,
         .w = spriteSize,
         .h = spriteSize};
 
     SDL_FRect dst{
         .x = obj.position.x,
-        .y = obj.position.x,
+        .y = 0,
         .w = spriteSize,
         .h = spriteSize};
 
