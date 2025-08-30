@@ -1,11 +1,10 @@
-#include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_image/SDL_image.h>
 #include <iostream>
-#include <vector>
 #include <string>
+#include <array>
 
-#include "animation.h"
+#include "gameObject.h"
 
 // Represents the core components of the SDL application state.
 struct SDLState
@@ -14,6 +13,20 @@ struct SDLState
     SDL_Event event;
     SDL_Renderer *renderer;
     int width, height, logical_width, logical_height;
+};
+
+const size_t LAYER_IDX_LEVEL = 0;
+const size_t LAYER_IDX_CHARACTERS = 0;
+
+struct GameState
+{
+    std::array<std::vector<GameObject>, 2> layers;
+    int playerIndex;
+
+    GameState()
+    {
+        playerIndex = 0;
+    }
 };
 
 struct Resources
@@ -53,6 +66,7 @@ struct Resources
 // Function prototypes
 void cleanup(SDLState &state);
 bool initialise(SDLState &state);
+void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime);
 
 int main(int argc, char *argv[])
 {
@@ -75,16 +89,23 @@ int main(int argc, char *argv[])
     res.load(state);
 
     // --- GAME DATA & INPUT SETUP ---
+
+    GameState gs;
+
+    // Create our player
+    GameObject player;
+    player.type = ObjectType::player;
+    player.texture = res.idle_texture;
+    player.animations = res.playerAnims;
+    player.currentAnimation = res.ANIM_PLAYER_IDLE;
+    gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
+
     // Get a pointer to the keyboard state array. This is a snapshot of the keyboard.
     const bool *keys = SDL_GetKeyboardState(nullptr);
-    float playerX = 0;
-    float floor = state.logical_height;
 
     // --- DELTA TIME SETUP ---
     // Get the time at the start of the game.
     uint64_t prevTime = SDL_GetTicks();
-
-    bool flipHorizontal = false;
 
     // Start the main game loop.
     bool running = true;
@@ -113,45 +134,19 @@ int main(int argc, char *argv[])
             }
         }
 
-        // --- HANDLE PLAYER INPUT ---
-        // Define player speed in pixels per second.
-        float moveAmountX = 0;
-        if (keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT]) // left
-        {
-            moveAmountX += -75;
-            flipHorizontal = true;
-        }
-        if (keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT]) // right
-        {
-            moveAmountX += 75;
-            flipHorizontal = false;
-        }
-
-        // Update player position based on speed and delta time.
-        playerX += moveAmountX * deltaTime;
-
         // --- RENDERING LOGIC ---
         // Set the draw color and clear the screen.
         SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
         SDL_RenderClear(state.renderer);
 
-        // Define the source and destination rectangles for rendering.
-        const float spriteSize = 32;
-        SDL_FRect src{
-            .x = 0,
-            .y = 0,
-            .w = spriteSize,
-            .h = spriteSize};
-
-        SDL_FRect dst{
-            .x = playerX,
-            .y = floor - spriteSize,
-            .w = spriteSize,
-            .h = spriteSize};
-
-        // Render the texture to the screen.
-        SDL_RenderTextureRotated(state.renderer, res.idle_texture, &src, &dst, 0, nullptr,
-                                 (flipHorizontal) ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
+        // draw all objects
+        for (auto &layer : gs.layers)
+        {
+            for (GameObject &obj : layer)
+            {
+                drawObject(state, gs, obj, deltaTime);
+            }
+        }
 
         // Swap the buffers to display the new frame.
         SDL_RenderPresent(state.renderer);
@@ -222,4 +217,26 @@ bool initialise(SDLState &state)
     SDL_SetRenderLogicalPresentation(state.renderer, state.logical_width, state.logical_height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
     return true;
+}
+
+void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime)
+{
+    // Define the source and destination rectangles for rendering.
+    const float spriteSize = 32;
+    SDL_FRect src{
+        .x = 0,
+        .y = 0,
+        .w = spriteSize,
+        .h = spriteSize};
+
+    SDL_FRect dst{
+        .x = obj.position.x,
+        .y = obj.position.x,
+        .w = spriteSize,
+        .h = spriteSize};
+
+    SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+
+    // Render the texture to the screen.
+    SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
 }
