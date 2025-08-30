@@ -15,6 +15,9 @@ struct SDLState
     SDL_Event event;
     SDL_Renderer *renderer;
     int width, height, logical_width, logical_height;
+    const bool *keys;
+
+    SDLState() : keys(SDL_GetKeyboardState(nullptr)) {}
 };
 
 const size_t LAYER_IDX_LEVEL = 0;
@@ -69,11 +72,12 @@ struct Resources
 void cleanup(SDLState &state);
 bool initialise(SDLState &state);
 void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime);
+void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime);
 
 int main(int argc, char *argv[])
 {
     // Initialize the SDL state structure.
-    SDLState state = {nullptr};
+    SDLState state;
 
     // Set the desired dimensions for the window and the logical rendering area.
     state.height = 720;
@@ -100,10 +104,9 @@ int main(int argc, char *argv[])
     player.texture = res.idle_texture;
     player.animations = res.playerAnims;
     player.currentAnimation = res.ANIM_PLAYER_IDLE;
+    player.acceleration = glm::vec2(300, 0);
+    player.maxSpeedX = 100;
     gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
-
-    // Get a pointer to the keyboard state array. This is a snapshot of the keyboard.
-    const bool *keys = SDL_GetKeyboardState(nullptr);
 
     // --- DELTA TIME SETUP ---
     // Get the time at the start of the game.
@@ -141,6 +144,7 @@ int main(int argc, char *argv[])
         {
             for (GameObject &obj : layer)
             {
+                update(state, gs, obj, deltaTime);
                 if (obj.currentAnimation != -1)
                 {
                     obj.animations[obj.currentAnimation].step(deltaTime);
@@ -255,4 +259,48 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
 
     // Render the texture to the screen.
     SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+}
+
+void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime)
+{
+    if (obj.type == ObjectType::player)
+    {
+        float currentDirection = 0;
+        float moveAmount = 0;
+
+        // We will do +1 and -1 to make sure that if user has pressed both keys then it will negate each other
+        if (state.keys[SDL_SCANCODE_A] || state.keys[SDL_SCANCODE_LEFT]) // Left Key
+            currentDirection -= 1;
+        if (state.keys[SDL_SCANCODE_D] || state.keys[SDL_SCANCODE_RIGHT]) // Right Direction
+            currentDirection += 1;
+
+        // If the user has pressed a key then assign the direction to the player
+        if (currentDirection)
+            obj.direction = currentDirection;
+
+        switch (obj.data.player.state)
+        {
+        case PlayerState::idle:
+            if (currentDirection)
+                obj.data.player.state = PlayerState::running;
+            break;
+        case PlayerState::running:
+            if (!currentDirection)
+                obj.data.player.state = PlayerState::idle;
+            break;
+        case PlayerState::jumping:
+            break;
+        }
+
+        // This is to calculate velocity of the object
+        obj.velocity += currentDirection * obj.acceleration * deltaTime;
+
+        // If the velocity is greater than max speed than reduce it to max speed
+        // we use absolute value because velocity can be negative for currentDirection = -1
+        if (std::abs(obj.velocity.x) > obj.maxSpeedX)
+            obj.velocity.x = obj.maxSpeedX;
+
+        // This is to get position
+        obj.position += obj.velocity * deltaTime;
+    }
 }
