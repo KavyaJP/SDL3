@@ -33,8 +33,10 @@ struct GameState
 
     GameState()
     {
-        playerIndex = 0;
+        playerIndex = -1;
     }
+
+    GameObject &player() { return layers[LAYER_IDX_CHARACTERS][playerIndex]; }
 };
 
 struct Resources
@@ -86,6 +88,7 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
 void collisionResponse(const SDLState &state, GameState &gs, const Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB, const SDL_FRect &rectC, GameObject &a, GameObject &b, float deltaTime);
 void checkCollision(const SDLState &state, GameState &gs, const Resources &res, GameObject &a, GameObject &b, float deltaTime);
 void createTiles(const SDLState &state, GameState &gs, const Resources &res);
+void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_Scancode key, bool keyDown);
 
 int main(int argc, char *argv[])
 {
@@ -139,6 +142,12 @@ int main(int argc, char *argv[])
                 state.width = state.event.window.data1;
                 state.height = state.event.window.data2;
                 break;
+            case SDL_EVENT_KEY_DOWN:
+                handleKeyInput(state, gs, gs.player(), state.event.key.scancode, true);
+                break;
+            case SDL_EVENT_KEY_UP:
+                handleKeyInput(state, gs, gs.player(), state.event.key.scancode, false);
+                break;
             }
         }
 
@@ -157,7 +166,7 @@ int main(int argc, char *argv[])
 
         // --- RENDERING LOGIC ---
         // Set the draw color and clear the screen.
-        SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(state.renderer, 20, 10, 30, 255);
         SDL_RenderClear(state.renderer);
 
         // draw all objects
@@ -474,6 +483,7 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
                 player.dynamic = true;
                 player.collider = {.x = 11, .y = 6, .w = 10, .h = 26};
                 gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
+                gs.playerIndex = gs.layers[LAYER_IDX_CHARACTERS].size() - 1;
                 break;
             }
             case 5:
@@ -489,6 +499,37 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
                 break;
             }
             }
+        }
+    }
+    assert(gs.playerIndex != -1);
+}
+
+void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_Scancode key, bool keyDown)
+{
+    const float JumpForce = -200.0f; // this is negative to make the player go up when they jump
+
+    if (obj.type == ObjectType::player)
+    {
+        switch (obj.data.player.state)
+        {
+        case PlayerState::idle:
+        {
+            if (key == SDL_SCANCODE_SPACE && keyDown)
+            {
+                obj.data.player.state = PlayerState::jumping;
+                obj.velocity.y += JumpForce;
+            }
+            break;
+        }
+        case PlayerState::running:
+        {
+            if (key == SDL_SCANCODE_SPACE && keyDown)
+            {
+                obj.data.player.state = PlayerState::jumping;
+                obj.velocity.y += JumpForce;
+            }
+            break;
+        }
         }
     }
 }
