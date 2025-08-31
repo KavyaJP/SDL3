@@ -58,6 +58,8 @@ struct GameObject
 
     SDL_Texture *texture;
 
+    bool dynamic;
+
     GameObject() : data{.level = LevelData()}
     {
         type = ObjectType::level;
@@ -66,5 +68,6 @@ struct GameObject
         maxSpeedX = 0;
         currentAnimation = -1;
         texture = nullptr;
+        dynamic = false;
     }
 };

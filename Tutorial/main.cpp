@@ -264,6 +264,12 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
 
 void update(const SDLState &state, GameState &gs, GameObject &obj, const Resources &res, float deltaTime)
 {
+    if (obj.dynamic)
+    {
+        // Apply Some Gravity
+        obj.velocity += glm::vec2(0, 500) * deltaTime;
+    }
+
     if (obj.type == ObjectType::player)
     {
         float currentDirection = 0;
@@ -324,10 +330,8 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
         // we use absolute value because velocity can be negative for currentDirection = -1
         if (std::abs(obj.velocity.x) > obj.maxSpeedX)
             obj.velocity.x = obj.maxSpeedX * currentDirection;
-
-        // This is to get position
-        obj.position += obj.velocity * deltaTime;
     }
+    obj.position += obj.velocity * deltaTime;
 }
 
 void createTiles(const SDLState &state, GameState &gs, const Resources &res)
@@ -385,6 +389,7 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
                 player.currentAnimation = res.ANIM_PLAYER_IDLE;
                 player.acceleration = glm::vec2(300, 0);
                 player.maxSpeedX = 100;
+                player.dynamic = true;
                 gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
                 break;
             }
