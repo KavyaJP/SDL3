@@ -44,7 +44,7 @@ struct Resources
     std::vector<Animation> playerAnims;
 
     std::vector<SDL_Texture *> textures;
-    SDL_Texture *idle_texture, *run_texture;
+    SDL_Texture *idle_texture, *run_texture, *brick, *grass, *ground, *panel;
 
     SDL_Texture *load_texture(SDL_Renderer *renderer, const std::string &filepath)
     {
@@ -63,6 +63,10 @@ struct Resources
 
         idle_texture = load_texture(state.renderer, "../data/idle.png");
         run_texture = load_texture(state.renderer, "../data/run.png");
+        brick = load_texture(state.renderer, "../data/tiles/brick.png");
+        grass = load_texture(state.renderer, "../data/tiles/grass.png");
+        ground = load_texture(state.renderer, "../data/tiles/ground.png");
+        panel = load_texture(state.renderer, "../data/tiles/panel.png");
     }
 
     void unload()
@@ -74,13 +78,11 @@ struct Resources
     }
 };
 
-Resources res;
-
 // Function prototypes
 void cleanup(SDLState &state);
 bool initialise(SDLState &state);
 void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime);
-void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime);
+void update(const SDLState &state, GameState &gs, GameObject &obj, const Resources &res, float deltaTime);
 void createTiles(const SDLState &state, GameState &gs, const Resources &res);
 
 int main(int argc, char *argv[])
@@ -100,6 +102,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    Resources res;
     res.load(state);
 
     // --- GAME DATA ---
@@ -142,7 +145,7 @@ int main(int argc, char *argv[])
         {
             for (GameObject &obj : layer)
             {
-                update(state, gs, obj, deltaTime);
+                update(state, gs, obj, res, deltaTime);
                 if (obj.currentAnimation != -1)
                 {
                     obj.animations[obj.currentAnimation].step(deltaTime);
@@ -259,7 +262,7 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
     SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
 }
 
-void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime)
+void update(const SDLState &state, GameState &gs, GameObject &obj, const Resources &res, float deltaTime)
 {
     if (obj.type == ObjectType::player)
     {
@@ -339,13 +342,20 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
     */
     short map[MAP_ROWS][MAP_COLUMNS] = {
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
     };
 
-    GameObject player;
+    const auto createObject = [&state](int r, int c, SDL_Texture *tex, ObjectType type)
+    {
+        GameObject o;
+        o.type = type;
+        o.position = glm::vec2(c * TILE_SIZE, state.logical_height - (MAP_ROWS - r) * TILE_SIZE);
+        o.texture = tex;
+        return o;
+    };
 
     for (int r = 0; r < MAP_ROWS; r++)
     {
@@ -353,17 +363,22 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
         {
             switch (map[r][c])
             {
-            case 0:
-                break;
             case 1:
+            {
+                GameObject o = createObject(r, c, res.ground, ObjectType::level);
+                gs.layers[LAYER_IDX_LEVEL].push_back(o);
                 break;
+            }
             case 2:
+            {
+                GameObject o = createObject(r, c, res.panel, ObjectType::level);
+                gs.layers[LAYER_IDX_LEVEL].push_back(o);
                 break;
-            case 3:
-                break;
+            }
             case 4: // This is the player cases
-                player.position = glm::vec2(c * TILE_SIZE, state.logical_height - (MAP_ROWS - r) * TILE_SIZE);
-                player.type = ObjectType::player;
+            {
+                GameObject player;
+                player = createObject(r, c, res.idle_texture, ObjectType::player);
                 player.data.player = PlayerData();
                 player.texture = res.idle_texture;
                 player.animations = res.playerAnims;
@@ -372,10 +387,19 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
                 player.maxSpeedX = 100;
                 gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
                 break;
+            }
             case 5:
+            {
+                GameObject o = createObject(r, c, res.grass, ObjectType::level);
+                gs.layers[LAYER_IDX_LEVEL].push_back(o);
                 break;
+            }
             case 6:
+            {
+                GameObject o = createObject(r, c, res.brick, ObjectType::level);
+                gs.layers[LAYER_IDX_LEVEL].push_back(o);
                 break;
+            }
             }
         }
     }
