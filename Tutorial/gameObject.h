@@ -60,7 +60,9 @@ struct GameObject
 
     bool dynamic;
 
-    GameObject() : data{.level = LevelData()}
+    SDL_FRect collider;
+
+    GameObject() : data{.level = LevelData()}, collider { 0 }
     {
         type = ObjectType::level;
         position = velocity = acceleration = glm::vec2(0, 0);
