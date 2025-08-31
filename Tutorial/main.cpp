@@ -83,6 +83,8 @@ void cleanup(SDLState &state);
 bool initialise(SDLState &state);
 void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime);
 void update(const SDLState &state, GameState &gs, GameObject &obj, const Resources &res, float deltaTime);
+void collisionResponse(const SDLState &state, GameState &gs, const Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB, const SDL_FRect &rectC, GameObject &a, GameObject &b, float deltaTime);
+void checkCollision(const SDLState &state, GameState &gs, const Resources &res, GameObject &a, GameObject &b, float deltaTime);
 void createTiles(const SDLState &state, GameState &gs, const Resources &res);
 
 int main(int argc, char *argv[])
@@ -332,6 +334,85 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
             obj.velocity.x = obj.maxSpeedX * currentDirection;
     }
     obj.position += obj.velocity * deltaTime;
+
+    // Handle Collision
+    for (auto &layers : gs.layers)
+    {
+        for (GameObject &objB : layers)
+        {
+            if (&obj != &objB)
+            {
+                checkCollision(state, gs, res, obj, objB, deltaTime);
+            }
+        }
+    }
+}
+
+void collisionResponse(const SDLState &state, GameState &gs, const Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB, const SDL_FRect &rectC, GameObject &a, GameObject &b, float deltaTime)
+{
+    if (a.type == ObjectType::player)
+    {
+        switch (b.type)
+        {
+        case ObjectType::level:
+        {
+            if (rectC.w < rectC.h)
+            {
+                // Horizontal Collision
+                if (a.velocity.x > 0)
+                {
+                    // We have a positive velocity, i.e. we are going in the right direction
+                    a.position.x -= rectC.w;
+                }
+                else if (a.velocity.x < 0)
+                {
+                    // We have a negative velocity, i.e. we are going in the left direction
+                    a.position.x += rectC.w;
+                }
+                a.velocity.x = 0;
+            }
+            else
+            {
+                // Vertical Collision
+                if (a.velocity.y > 0)
+                {
+                    // We have a positive velocity, i.e. we are going in the downward direction
+                    a.position.y -= rectC.h;
+                }
+                else if (a.velocity.y < 0)
+                {
+                    // We have a negative velocity, i.e. we are going in the upward direction
+                    a.position.y += rectC.h;
+                }
+                a.velocity.y = 0;
+            }
+            break;
+        }
+        }
+    }
+}
+
+void checkCollision(const SDLState &state, GameState &gs, const Resources &res, GameObject &a, GameObject &b, float deltaTime)
+{
+    SDL_FRect rectA{
+        .x = a.position.x,
+        .y = a.position.y,
+        .w = TILE_SIZE,
+        .h = TILE_SIZE};
+
+    SDL_FRect rectB{
+        .x = b.position.x,
+        .y = b.position.y,
+        .w = TILE_SIZE,
+        .h = TILE_SIZE};
+
+    SDL_FRect rectC{0}; // this is the rect that will check for collision
+
+    if (SDL_GetRectIntersectionFloat(&rectA, &rectB, &rectC))
+    {
+        // Found intersection
+        collisionResponse(state, gs, res, rectA, rectB, rectC, a, b, deltaTime);
+    }
 }
 
 void createTiles(const SDLState &state, GameState &gs, const Resources &res)
@@ -345,11 +426,11 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
     6 - Brick
     */
     short map[MAP_ROWS][MAP_COLUMNS] = {
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
 
     const auto createObject = [&state](int r, int c, SDL_Texture *tex, ObjectType type)
