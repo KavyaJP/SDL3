@@ -37,10 +37,11 @@ struct GameState
 struct Resources
 {
     const int ANIM_PLAYER_IDLE = 0;
+    const int ANIM_PLAYER_RUN = 1;
     std::vector<Animation> playerAnims;
 
     std::vector<SDL_Texture *> textures;
-    SDL_Texture *idle_texture;
+    SDL_Texture *idle_texture, *run_texture;
 
     SDL_Texture *load_texture(SDL_Renderer *renderer, const std::string &filepath)
     {
@@ -55,8 +56,10 @@ struct Resources
     {
         playerAnims.resize(5);
         playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);
+        playerAnims[ANIM_PLAYER_RUN] = Animation(4, 0.5f);
 
         idle_texture = load_texture(state.renderer, "../data/idle.png");
+        run_texture = load_texture(state.renderer, "../data/run.png");
     }
 
     void unload()
@@ -67,6 +70,8 @@ struct Resources
         }
     }
 };
+
+Resources res;
 
 // Function prototypes
 void cleanup(SDLState &state);
@@ -91,7 +96,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Resources res;
     res.load(state);
 
     // --- GAME DATA & INPUT SETUP ---
@@ -283,7 +287,11 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTi
         {
         case PlayerState::idle:
             if (currentDirection)
+            {
                 obj.data.player.state = PlayerState::running;
+                obj.texture = res.run_texture;
+                obj.currentAnimation = res.ANIM_PLAYER_RUN;
+            }
             else
             {
                 // decelarate
@@ -303,7 +311,11 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTi
             break;
         case PlayerState::running:
             if (!currentDirection)
+            {
                 obj.data.player.state = PlayerState::idle;
+                obj.texture = res.idle_texture;
+                obj.currentAnimation = res.ANIM_PLAYER_IDLE;
+            }
             break;
         case PlayerState::jumping:
             break;
