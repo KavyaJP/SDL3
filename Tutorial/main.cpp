@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <array>
+#include <format>
 
 #include "gameObject.h"
 
@@ -178,6 +179,10 @@ int main(int argc, char *argv[])
             }
         }
 
+        SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
+        SDL_RenderDebugText(state.renderer, 5, 5,
+                            std::format("state: {}", static_cast<int>(gs.player().data.player.state)).c_str());
+
         // Swap the buffers to display the new frame.
         SDL_RenderPresent(state.renderer);
 
@@ -345,6 +350,7 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
     obj.position += obj.velocity * deltaTime;
 
     // Handle Collision
+    bool foundGround = false;
     for (auto &layers : gs.layers)
     {
         for (GameObject &objB : layers)
@@ -352,7 +358,34 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
             if (&obj != &objB)
             {
                 checkCollision(state, gs, res, obj, objB, deltaTime);
+
+                // grounded sensor
+                SDL_FRect sensor{
+                    .x = obj.position.x + obj.collider.x,
+                    .y = obj.position.y + obj.collider.y + obj.collider.h,
+                    .w = obj.collider.w,
+                    .h = 1};
+
+                SDL_FRect rectB{
+                    .x = objB.position.x + objB.collider.x,
+                    .y = objB.position.y + objB.collider.y,
+                    .w = objB.collider.w,
+                    .h = objB.collider.h};
+
+                if (SDL_HasRectIntersectionFloat(&sensor, &rectB))
+                {
+                    foundGround = true;
+                }
             }
+        }
+    }
+    if (obj.grounded != foundGround)
+    {
+        // We are changing the state
+        obj.grounded = foundGround;
+        if (foundGround && obj.type == ObjectType::player)
+        {
+            obj.data.player.state = PlayerState::running;
         }
     }
 }

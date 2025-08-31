@@ -59,10 +59,11 @@ struct GameObject
     SDL_Texture *texture;
 
     bool dynamic;
+    bool grounded;
 
     SDL_FRect collider;
 
-    GameObject() : data{.level = LevelData()}, collider { 0 }
+    GameObject() : data{.level = LevelData()}, collider{0}
     {
         type = ObjectType::level;
         position = velocity = acceleration = glm::vec2(0, 0);
@@ -71,5 +72,6 @@ struct GameObject
         currentAnimation = -1;
         texture = nullptr;
         dynamic = false;
+        grounded = false;
     }
 };
