@@ -22,6 +22,9 @@ struct SDLState
 
 const size_t LAYER_IDX_LEVEL = 0;
 const size_t LAYER_IDX_CHARACTERS = 0;
+const int MAP_ROWS = 5;
+const int MAP_COLUMNS = 50;
+const int TILE_SIZE = 32;
 
 struct GameState
 {
@@ -78,6 +81,7 @@ void cleanup(SDLState &state);
 bool initialise(SDLState &state);
 void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime);
 void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime);
+void createTiles(const SDLState &state, GameState &gs, const Resources &res);
 
 int main(int argc, char *argv[])
 {
@@ -85,10 +89,10 @@ int main(int argc, char *argv[])
     SDLState state;
 
     // Set the desired dimensions for the window and the logical rendering area.
-    state.height = 720;
-    state.width = 1280;
+    state.height = 1080;
+    state.width = 1920;
     state.logical_width = 640;
-    state.logical_height = 480;
+    state.logical_height = 360;
 
     // Initialise SDL, the window, and the renderer.
     if (!initialise(state))
@@ -98,20 +102,9 @@ int main(int argc, char *argv[])
 
     res.load(state);
 
-    // --- GAME DATA & INPUT SETUP ---
-
+    // --- GAME DATA ---
     GameState gs;
-
-    // Create our player
-    GameObject player;
-    player.type = ObjectType::player;
-    player.data.player = PlayerData();
-    player.texture = res.idle_texture;
-    player.animations = res.playerAnims;
-    player.currentAnimation = res.ANIM_PLAYER_IDLE;
-    player.acceleration = glm::vec2(300, 0);
-    player.maxSpeedX = 100;
-    gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
+    createTiles(state, gs, res);
 
     // --- DELTA TIME SETUP ---
     // Get the time at the start of the game.
@@ -256,7 +249,7 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
 
     SDL_FRect dst{
         .x = obj.position.x,
-        .y = 0,
+        .y = obj.position.y,
         .w = spriteSize,
         .h = spriteSize};
 
@@ -331,5 +324,59 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, float deltaTi
 
         // This is to get position
         obj.position += obj.velocity * deltaTime;
+    }
+}
+
+void createTiles(const SDLState &state, GameState &gs, const Resources &res)
+{
+    /*
+    1 - Ground
+    2 - Panel
+    3 - Enemy
+    4 - Player
+    5 - Grass
+    6 - Brick
+    */
+    short map[MAP_ROWS][MAP_COLUMNS] = {
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    };
+
+    GameObject player;
+
+    for (int r = 0; r < MAP_ROWS; r++)
+    {
+        for (int c = 0; c < MAP_COLUMNS; c++)
+        {
+            switch (map[r][c])
+            {
+            case 0:
+                break;
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            case 4: // This is the player cases
+                player.position = glm::vec2(c * TILE_SIZE, state.logical_height - (MAP_ROWS - r) * TILE_SIZE);
+                player.type = ObjectType::player;
+                player.data.player = PlayerData();
+                player.texture = res.idle_texture;
+                player.animations = res.playerAnims;
+                player.currentAnimation = res.ANIM_PLAYER_IDLE;
+                player.acceleration = glm::vec2(300, 0);
+                player.maxSpeedX = 100;
+                gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
+                break;
+            case 5:
+                break;
+            case 6:
+                break;
+            }
+        }
     }
 }

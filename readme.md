@@ -28,7 +28,7 @@ pacman -S --needed base-devel mingw-w64-x86_64-toolchain
 Then open the MINGW64 Shell and run this command to install sdl3
 
 ```bash
-pacman -S mingw-w64-x86_64-sdl3 mingw-w64-x86_64-sdl3-image mingw-w64-x86_64-sdl3-ttf mingw-w64-x86_64-make
+pacman -S mingw-w64-x86_64-sdl3 mingw-w64-x86_64-sdl3-image mingw-w64-x86_64-sdl3-ttf mingw-w64-x86_64-make mingw-w64-x86_64-glm
 ```
 
 And now to verify the installation of all these libraries, use this command in the root directory of this repository after cloning it
