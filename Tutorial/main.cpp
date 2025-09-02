@@ -97,8 +97,8 @@ int main(int argc, char *argv[])
     SDLState state;
 
     // Set the desired dimensions for the window and the logical rendering area.
-    state.height = 1080;
-    state.width = 1920;
+    state.height = 720;
+    state.width = 1280;
     state.logical_width = 640;
     state.logical_height = 360;
 
