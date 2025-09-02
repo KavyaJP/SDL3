@@ -2,5 +2,4 @@
 .vscode/
 build/
 output/
-run.bat
 gitall.bat
