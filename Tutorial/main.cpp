@@ -121,6 +121,9 @@ int main(int argc, char *argv[])
     // --- DELTA TIME SETUP ---
     // Get the time at the start of the game.
     uint64_t prevTime = SDL_GetTicks();
+    float fps_timer = 0;
+    int fps_counter = 0;
+    int last_fps = 0;
 
     // Start the main game loop.
     bool running = true;
@@ -132,6 +135,16 @@ int main(int argc, char *argv[])
         // Calculate the time elapsed since the last frame, in seconds.
         // We use 1000.0f to force a floating-point division.
         float deltaTime = (nowTime - prevTime) / 1000.0f;
+
+        // --- FPS Averaging Logic ---
+        fps_timer += deltaTime;
+        fps_counter++;
+        if (fps_timer >= 1.0f) // Update the display once per second
+        {
+            last_fps = fps_counter;
+            fps_counter = 0;
+            fps_timer -= 1.0f;
+        }
 
         // Process all pending events in the queue.
         while (SDL_PollEvent(&state.event))
@@ -185,6 +198,10 @@ int main(int argc, char *argv[])
         SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
         SDL_RenderDebugText(state.renderer, 5, 5,
                             std::format("state: {}", static_cast<int>(gs.player().data.player.state)).c_str());
+
+        SDL_SetRenderDrawColor(state.renderer, 0, 255, 0, 255);
+        SDL_RenderDebugText(state.renderer, 5, 50,
+                            std::format("FPS: {}", last_fps).c_str());
 
         // Swap the buffers to display the new frame.
         SDL_RenderPresent(state.renderer);
