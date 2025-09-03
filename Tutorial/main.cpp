@@ -44,10 +44,11 @@ struct Resources
 {
     const int ANIM_PLAYER_IDLE = 0;
     const int ANIM_PLAYER_RUN = 1;
+    const int ANIM_PLAYER_SLIDE = 2;
     std::vector<Animation> playerAnims;
 
     std::vector<SDL_Texture *> textures;
-    SDL_Texture *idle_texture, *run_texture, *brick, *grass, *ground, *panel;
+    SDL_Texture *idle_texture, *run_texture, *brick, *grass, *ground, *panel, *sliding_texture;
 
     SDL_Texture *load_texture(SDL_Renderer *renderer, const std::string &filepath)
     {
@@ -63,9 +64,11 @@ struct Resources
         playerAnims.resize(5);
         playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);
         playerAnims[ANIM_PLAYER_RUN] = Animation(4, 0.5f);
+        playerAnims[ANIM_PLAYER_SLIDE] = Animation(1, 1.0f);
 
         idle_texture = load_texture(state.renderer, "../data/idle.png");
         run_texture = load_texture(state.renderer, "../data/run.png");
+        sliding_texture = load_texture(state.renderer, "../data/slide.png");
         brick = load_texture(state.renderer, "../data/tiles/brick.png");
         grass = load_texture(state.renderer, "../data/tiles/grass.png");
         ground = load_texture(state.renderer, "../data/tiles/ground.png");
@@ -307,8 +310,6 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
             if (currentDirection)
             {
                 obj.data.player.state = PlayerState::running;
-                obj.texture = res.run_texture;
-                obj.currentAnimation = res.ANIM_PLAYER_RUN;
             }
             else
             {
@@ -326,16 +327,30 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
                         obj.velocity.x += amount; // amount will be always inverse to velocity because of factor so we add it
                 }
             }
+            obj.texture = res.idle_texture;
+            obj.currentAnimation = res.ANIM_PLAYER_IDLE;
             break;
         case PlayerState::running:
             if (!currentDirection)
             {
                 obj.data.player.state = PlayerState::idle;
-                obj.texture = res.idle_texture;
-                obj.currentAnimation = res.ANIM_PLAYER_IDLE;
+            }
+
+            // moving in opposite direction will make a sliding
+            if (obj.velocity.x * obj.direction < 0 && obj.grounded)
+            {
+                obj.texture = res.sliding_texture;
+                obj.currentAnimation = res.ANIM_PLAYER_SLIDE;
+            }
+            else
+            {
+                obj.texture = res.run_texture;
+                obj.currentAnimation = res.ANIM_PLAYER_RUN;
             }
             break;
         case PlayerState::jumping:
+            obj.texture = res.run_texture;
+            obj.currentAnimation = res.ANIM_PLAYER_RUN;
             break;
         }
 
@@ -388,6 +403,18 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
             obj.data.player.state = PlayerState::running;
         }
     }
+
+    SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
+    SDL_RenderDebugText(state.renderer, 5, 20,
+                        std::format("OBJ Grounded: {}", static_cast<int>(gs.player().grounded)).c_str());
+
+    SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
+    SDL_RenderDebugText(state.renderer, 5, 35,
+                        std::format("Found Ground: {}", static_cast<int>(foundGround)).c_str());
+
+    // Swap the buffers to display the new frame.
+
+    SDL_RenderPresent(state.renderer);
 }
 
 void collisionResponse(const SDLState &state, GameState &gs, const Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB, const SDL_FRect &rectC, GameObject &a, GameObject &b, float deltaTime)
