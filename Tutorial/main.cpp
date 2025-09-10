@@ -31,10 +31,16 @@ struct GameState
 {
     std::array<std::vector<GameObject>, 2> layers;
     int playerIndex;
+    SDL_FRect mapViewPort;
 
-    GameState()
+    GameState(const SDLState &state)
     {
         playerIndex = -1;
+        mapViewPort = {
+            .x = 0,
+            .y = 0,
+            .w = static_cast<float>(state.logical_width),
+            .h = static_cast<float>(state.logical_height)};
     }
 
     GameObject &player() { return layers[LAYER_IDX_CHARACTERS][playerIndex]; }
@@ -115,7 +121,7 @@ int main(int argc, char *argv[])
     res.load(state);
 
     // --- GAME DATA ---
-    GameState gs;
+    GameState gs(state);
     createTiles(state, gs, res);
 
     // --- DELTA TIME SETUP ---
@@ -194,6 +200,8 @@ int main(int argc, char *argv[])
                 drawObject(state, gs, obj, deltaTime);
             }
         }
+
+        gs.mapViewPort.x = (gs.player().position.x + TILE_SIZE / 2) - gs.mapViewPort.w / 2;
 
         SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
         SDL_RenderDebugText(state.renderer, 5, 5,
@@ -287,7 +295,7 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
         .h = spriteSize};
 
     SDL_FRect dst{
-        .x = obj.position.x,
+        .x = obj.position.x - gs.mapViewPort.x,
         .y = obj.position.y,
         .w = spriteSize,
         .h = spriteSize};
@@ -513,8 +521,8 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
     */
     short map[MAP_ROWS][MAP_COLUMNS] = {
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
