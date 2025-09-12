@@ -30,6 +30,8 @@ const int TILE_SIZE = 32;
 struct GameState
 {
     std::array<std::vector<GameObject>, 2> layers;
+    std::vector<GameObject> backgroundTiles;
+    std::vector<GameObject> foregroundTiles;
     int playerIndex;
     SDL_FRect mapViewPort;
     float bg2scroll, bg3scroll, bg4scroll;
@@ -222,7 +224,7 @@ int main(int argc, char *argv[])
                             std::format("state: {}", static_cast<int>(gs.player().data.player.state)).c_str());
 
         SDL_SetRenderDrawColor(state.renderer, 0, 255, 0, 255);
-        SDL_RenderDebugText(state.renderer, 5, 50,
+        SDL_RenderDebugText(state.renderer, state.logical_width - 70, 0,
                             std::format("FPS: {}", last_fps).c_str());
 
         // Swap the buffers to display the new frame.
@@ -450,10 +452,6 @@ void update(const SDLState &state, GameState &gs, GameObject &obj, const Resourc
     SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
     SDL_RenderDebugText(state.renderer, 5, 35,
                         std::format("Found Ground: {}", static_cast<int>(foundGround)).c_str());
-
-    // Swap the buffers to display the new frame.
-
-    SDL_RenderPresent(state.renderer);
 }
 
 void collisionResponse(const SDLState &state, GameState &gs, const Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB, const SDL_FRect &rectC, GameObject &a, GameObject &b, float deltaTime)
@@ -534,10 +532,10 @@ void createTiles(const SDLState &state, GameState &gs, const Resources &res)
     6 - Brick
     */
     short map[MAP_ROWS][MAP_COLUMNS] = {
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
 
@@ -643,7 +641,7 @@ void drawParralaxBackground(SDL_Renderer *renderer, SDL_Texture *texture, float 
 
     SDL_FRect dst{
         .x = scrollPos,
-        .y = 36,
+        .y = 68,
         .w = texture->w * 2.0f, // the width is 2 times because we want to draw the texture twice
         .h = static_cast<float>(texture->h)};
 
